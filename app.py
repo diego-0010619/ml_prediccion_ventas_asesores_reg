@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- Lógica para Imagen de Fondo ---
+# --- Lógica para Imagen de Fondo y Tema Oscuro Premium ---
 def set_background(image_file):
     """Codifica una imagen local a base64 y la inyecta como fondo mediante CSS."""
     try:
@@ -24,43 +24,58 @@ def set_background(image_file):
         st.markdown(
             f"""
             <style>
+            /* Inyección de la imagen al fondo de la aplicación */
             .stApp {{
                 background-image: url(data:image/jpeg;base64,{encoded_string});
                 background-size: cover;
                 background-position: center;
                 background-attachment: fixed;
             }}
-            /* Fondo semi-transparente para que el texto y los controles sean legibles */
-            .stTabs, .stMarkdown, .metric-container {{
-                background-color: rgba(255, 255, 255, 0.85);
-                padding: 15px;
-                border-radius: 10px;
+            
+            /* Capa oscura general para apagar el brillo de la imagen y evitar que se vea pixelada */
+            [data-testid="stAppViewContainer"] > .main {{
+                background-color: rgba(0, 0, 0, 0.55); 
             }}
-            .main {{background-color: transparent;}}
-            h1 {{color: #1E1E1E; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; letter-spacing: 1px;}}
+
+            /* Estilo "Dark Glassmorphism" para los paneles y pestañas */
+            .stTabs, .metric-container, div[data-testid="stMarkdownContainer"] > p {{
+                background-color: rgba(15, 23, 42, 0.85); /* Azul muy oscuro casi negro, con 85% de opacidad */
+                padding: 15px;
+                border-radius: 12px;
+                color: #F8FAFC !important; /* Blanco hueso para evitar fatiga visual */
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }}
+            
+            /* Forzar el color de todos los textos principales a blanco */
+            h1, h2, h3, label, .stMarkdown {{
+                color: #FFFFFF !important;
+                text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            }}
+
+            /* Estilo del botón principal */
             .stButton>button {{
                 width: 100%;
-                background-color: #1E1E1E;
+                background: linear-gradient(90deg, #1E293B 0%, #0F172A 100%);
                 color: white;
-                border-radius: 4px;
+                border: 1px solid #334155;
+                border-radius: 6px;
+                padding: 10px;
+                font-weight: bold;
                 transition: all 0.3s ease;
             }}
             .stButton>button:hover {{
-                background-color: #4A4A4A;
-                border-color: #4A4A4A;
+                border-color: #94A3B8;
+                box-shadow: 0 0 15px rgba(255,255,255,0.2);
                 transform: translateY(-2px);
-            }}
-            .metric-container {{
-                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             }}
             </style>
             """,
             unsafe_allow_html=True
         )
     except FileNotFoundError:
-        st.warning("No se encontró la imagen de fondo. Verifique la ruta del archivo.")
+        st.warning("⚠️ No se encontró la imagen de fondo. Verifique que 'fondo_despliegue.jfif' esté en el repositorio.")
 
-# Llamada a la función de fondo (Asegúrese de que la imagen esté en la misma ruta del script)
+# Llamada a la función con el nombre exacto de su archivo
 set_background('fondo_despliegue.jfif')
 
 # --- Carga de artefactos ---
@@ -78,7 +93,7 @@ def formatear_cop(valor):
     return f"${valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # --- Interfaz Principal ---
-st.title("Proyección Comercial por Asesor")
+st.title("✨ Proyección Comercial por Asesor")
 st.markdown("Anticipe el rendimiento mensual combinando historial de ventas, perfil del asesor y contexto de la tienda.")
 st.write("---")
 
@@ -108,7 +123,6 @@ with tab2:
 with tab3:
     st.markdown("Registre las ventas de los últimos 3 meses para capturar la tendencia de la temporada.")
     col1, col2, col3 = st.columns(3)
-    # 📌 Entradas numéricas convertidas a enteros y con format="%d" para eliminar decimales
     venta_t_3 = col1.number_input('Venta mes T-3 (COP)', min_value=0, value=5000000, step=500000, format="%d")
     venta_t_2 = col2.number_input('Venta mes T-2 (COP)', min_value=0, value=5500000, step=500000, format="%d")
     venta_t_1 = col3.number_input('Venta mes T-1 (COP)', min_value=0, value=6000000, step=500000, format="%d")
@@ -142,6 +156,8 @@ if st.button('Generar Proyección de Ventas'):
         data_preparada[col_numericas] = min_max_scaler.transform(data_preparada[col_numericas])
 
         X_inferencia = data_preparada.drop(columns=['valor_venta_asesor_mes_t'])
+        
+        # Inferencia estricta con Gradient Boosting (según su requerimiento)
         Y_pred_normalizado = modelo_gbc.predict(X_inferencia)
 
         temp_array = np.zeros((1, len(col_numericas)))
@@ -157,7 +173,7 @@ if st.button('Generar Proyección de Ventas'):
         with res_col1:
             st.markdown('<div class="metric-container">', unsafe_allow_html=True)
             st.metric(label="Venta Estimada (Mes T)", value=formatear_cop(Y_pred_pesos), delta=formatear_cop(Y_pred_pesos - venta_t_1))
-            st.caption("MAE estimado: ± 3.3%")
+            st.caption("Modelo Gradient Boosting (MAE estimado: ± 3.3%)")
             st.markdown('</div>', unsafe_allow_html=True)
             
         with res_col2:
@@ -165,4 +181,4 @@ if st.button('Generar Proyección de Ventas'):
                 "Mes": ["T-3", "T-2", "T-1", "T (Proyectado)"],
                 "Ventas": [venta_t_3, venta_t_2, venta_t_1, Y_pred_pesos]
             }).set_index("Mes")
-            st.line_chart(df_tendencia, color="#1E1E1E")
+            st.line_chart(df_tendencia)
