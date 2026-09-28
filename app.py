@@ -61,7 +61,7 @@ def set_background(image_file):
         st.warning("No se encontró la imagen de fondo. Verifique la ruta del archivo.")
 
 # Llamada a la función de fondo (Asegúrese de que la imagen esté en la misma ruta del script)
-set_background('watermarked_img_11123125961523946679.jpg')
+set_background('fondo_despliegue.jfif')
 
 # --- Carga de artefactos ---
 @st.cache_resource
