@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 import pickle
 import time
+import base64
 
 # --- Configuración de la página ---
 st.set_page_config(
@@ -13,36 +14,58 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- Estilos CSS personalizados para una UI premium ---
-st.markdown("""
-    <style>
-    .main {background-color: #FAFAFA;}
-    h1 {color: #1E1E1E; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; letter-spacing: 1px;}
-    .stButton>button {
-        width: 100%;
-        background-color: #1E1E1E;
-        color: white;
-        border-radius: 4px;
-        transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        background-color: #4A4A4A;
-        border-color: #4A4A4A;
-        transform: translateY(-2px);
-    }
-    .metric-container {
-        padding: 20px;
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    </style>
-""", unsafe_allow_html=True)
+# --- Lógica para Imagen de Fondo ---
+def set_background(image_file):
+    """Codifica una imagen local a base64 y la inyecta como fondo mediante CSS."""
+    try:
+        with open(image_file, "rb") as f:
+            encoded_string = base64.b64encode(f.read()).decode()
+        
+        st.markdown(
+            f"""
+            <style>
+            .stApp {{
+                background-image: url(data:image/jpeg;base64,{encoded_string});
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+            }}
+            /* Fondo semi-transparente para que el texto y los controles sean legibles */
+            .stTabs, .stMarkdown, .metric-container {{
+                background-color: rgba(255, 255, 255, 0.85);
+                padding: 15px;
+                border-radius: 10px;
+            }}
+            .main {{background-color: transparent;}}
+            h1 {{color: #1E1E1E; font-family: 'Helvetica Neue', sans-serif; font-weight: 300; letter-spacing: 1px;}}
+            .stButton>button {{
+                width: 100%;
+                background-color: #1E1E1E;
+                color: white;
+                border-radius: 4px;
+                transition: all 0.3s ease;
+            }}
+            .stButton>button:hover {{
+                background-color: #4A4A4A;
+                border-color: #4A4A4A;
+                transform: translateY(-2px);
+            }}
+            .metric-container {{
+                box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            }}
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    except FileNotFoundError:
+        st.warning("No se encontró la imagen de fondo. Verifique la ruta del archivo.")
+
+# Llamada a la función de fondo (Asegúrese de que la imagen esté en la misma ruta del script)
+set_background('watermarked_img_11123125961523946679.jpg')
 
 # --- Carga de artefactos ---
 @st.cache_resource
 def cargar_modelo():
-    """Carga el modelo en caché para evitar lectura en disco con cada interacción de la UI."""
     filename = 'modelo-gboosting-reg.pkl'
     with open(filename, 'rb') as f:
         modelo_gbc, variables_entrenamiento, min_max_scaler = pickle.load(f)
@@ -55,11 +78,10 @@ def formatear_cop(valor):
     return f"${valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # --- Interfaz Principal ---
-st.title("✨ Proyección Comercial por Asesor")
+st.title("Proyección Comercial por Asesor")
 st.markdown("Anticipe el rendimiento mensual combinando historial de ventas, perfil del asesor y contexto de la tienda.")
 st.write("---")
 
-# Organización en pestañas para reducir carga visual
 tab1, tab2, tab3 = st.tabs(["👤 Perfil del Asesor", "🏬 Contexto de Tienda", "📊 Historial de Ventas (T-3 a T-1)"])
 
 with tab1:
@@ -86,18 +108,18 @@ with tab2:
 with tab3:
     st.markdown("Registre las ventas de los últimos 3 meses para capturar la tendencia de la temporada.")
     col1, col2, col3 = st.columns(3)
-    venta_t_3 = col1.number_input('Venta mes T-3 (COP)', min_value=0.0, value=5000000.0, step=500000.0)
-    venta_t_2 = col2.number_input('Venta mes T-2 (COP)', min_value=0.0, value=5500000.0, step=500000.0)
-    venta_t_1 = col3.number_input('Venta mes T-1 (COP)', min_value=0.0, value=6000000.0, step=500000.0)
+    # 📌 Entradas numéricas convertidas a enteros y con format="%d" para eliminar decimales
+    venta_t_3 = col1.number_input('Venta mes T-3 (COP)', min_value=0, value=5000000, step=500000, format="%d")
+    venta_t_2 = col2.number_input('Venta mes T-2 (COP)', min_value=0, value=5500000, step=500000, format="%d")
+    venta_t_1 = col3.number_input('Venta mes T-1 (COP)', min_value=0, value=6000000, step=500000, format="%d")
 
 st.write("---")
 
 # --- Lógica de Inferencia ---
 if st.button('Generar Proyección de Ventas'):
     with st.spinner('Analizando variables y calculando pronóstico...'):
-        time.sleep(0.6) # Simula transición suave
+        time.sleep(0.6) 
         
-        # 1. Empaquetar captura
         columnas_entrada = ['genero_asesor', 'edad_asesor', 'tipo_vinculacion', 'nacionalidad_asesor',
                             'total_dias_absentismo', 'tipo_ubicacion_tienda', 'marca', 'zona_comercial',
                             'cantidad_cajas', 'metros_cuadrados_tienda', 'mes_venta', 'venta_t_1',
@@ -109,23 +131,19 @@ if st.button('Generar Proyección de Ventas'):
         
         data = pd.DataFrame(datos, columns=columnas_entrada)
 
-        # 2. Preprocesamiento Vectorial
         columnas_cat = ['genero_asesor', 'tipo_vinculacion', 'nacionalidad_asesor', 'tipo_ubicacion_tienda', 'marca', 'zona_comercial', 'mes_venta']
         data[columnas_cat] = data[columnas_cat].apply(lambda x: x.astype(str).str.upper())
 
         data_preparada = pd.get_dummies(data, columns=columnas_cat, drop_first=False, dtype=int)
         data_preparada = data_preparada.reindex(columns=variables_entrenamiento, fill_value=0)
 
-        # 3. Escalado
         data_preparada['valor_venta_asesor_mes_t'] = 0.0
         col_numericas = ['edad_asesor', 'total_dias_absentismo', 'cantidad_cajas', 'metros_cuadrados_tienda', 'venta_t_1', 'venta_t_2', 'venta_t_3', 'valor_venta_asesor_mes_t']
         data_preparada[col_numericas] = min_max_scaler.transform(data_preparada[col_numericas])
 
-        # 4. Inferencia
         X_inferencia = data_preparada.drop(columns=['valor_venta_asesor_mes_t'])
         Y_pred_normalizado = modelo_gbc.predict(X_inferencia)
 
-        # 5. Transformación Inversa
         temp_array = np.zeros((1, len(col_numericas)))
         indice_target = col_numericas.index('valor_venta_asesor_mes_t')
         temp_array[0, indice_target] = Y_pred_normalizado[0]
@@ -143,7 +161,6 @@ if st.button('Generar Proyección de Ventas'):
             st.markdown('</div>', unsafe_allow_html=True)
             
         with res_col2:
-            # Gráfico de tendencia para la vista ejecutiva
             df_tendencia = pd.DataFrame({
                 "Mes": ["T-3", "T-2", "T-1", "T (Proyectado)"],
                 "Ventas": [venta_t_3, venta_t_2, venta_t_1, Y_pred_pesos]
