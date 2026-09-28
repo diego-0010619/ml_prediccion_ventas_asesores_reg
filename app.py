@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -177,8 +178,24 @@ if st.button('Generar Proyección de Ventas'):
             st.markdown('</div>', unsafe_allow_html=True)
             
         with res_col2:
+            # 1. Definimos un DataFrame con una columna matemática de orden estricto
             df_tendencia = pd.DataFrame({
                 "Mes": ["T-3", "T-2", "T-1", "T (Proyectado)"],
-                "Ventas": [venta_t_3, venta_t_2, venta_t_1, Y_pred_pesos]
-            }).set_index("Mes")
-            st.line_chart(df_tendencia)
+                "Ventas": [venta_t_3, venta_t_2, venta_t_1, Y_pred_pesos],
+                "Orden": [1, 2, 3, 4] 
+            })
+            
+            # 2. Construimos la gráfica declarativa forzando el eje X
+            grafico = alt.Chart(df_tendencia).mark_line(
+                point=True, 
+                color="#60A5FA" # Tono azul claro/celeste para contrastar con el fondo oscuro
+            ).encode(
+                x=alt.X('Mes:N', sort=alt.EncodingSortField(field="Orden", order='ascending'), title="Periodo"),
+                y=alt.Y('Ventas:Q', title="Ventas (COP)"),
+                tooltip=['Mes', 'Ventas']
+            ).properties(
+                height=300
+            )
+            
+            # 3. Renderizamos la gráfica en Streamlit
+            st.altair_chart(grafico, use_container_width=True)
