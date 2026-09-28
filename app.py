@@ -73,7 +73,7 @@ def set_background(image_file):
             unsafe_allow_html=True
         )
     except FileNotFoundError:
-        st.warning("⚠️ No se encontró la imagen de fondo. Verifique que 'fondo_despliegue.jfif' esté en el repositorio.")
+        st.warning("No se encontró la imagen de fondo. Verifique que 'fondo_despliegue.jfif' esté en el repositorio.")
 
 # Llamada a la función con el nombre exacto de su archivo
 set_background('fondo_despliegue.jfif')
@@ -93,7 +93,7 @@ def formatear_cop(valor):
     return f"${valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # --- Interfaz Principal ---
-st.title("✨ Proyección Comercial por Asesor")
+st.title("Proyección Comercial por Asesor")
 st.markdown("Anticipe el rendimiento mensual combinando historial de ventas, perfil del asesor y contexto de la tienda.")
 st.write("---")
 
