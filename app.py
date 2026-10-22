@@ -182,22 +182,28 @@ def predecir_venta(datos_dict):
 # ==============================================================================
 # ESTILOS CSS - DARK LUXURY FASHION RETAIL
 # ==============================================================================
-def aplicar_estilos(activar_fondo_imagen=False):
+def aplicar_estilos():
     css_fondo = ""
-    if activar_fondo_imagen:
-        try:
-            with open("fondo_despliegue.jfif", "rb") as f:
-                img_b64 = base64.b64encode(f.read()).decode()
-            css_fondo = f"""
-            .stApp {{
-                background-image: linear-gradient(rgba(7, 11, 20, 0.88), rgba(4, 7, 15, 0.94)), url(data:image/jpeg;base64,{img_b64});
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
-            }}
-            """
-        except Exception:
-            pass
+    try:
+        with open("fondo_despliegue.jfif", "rb") as f:
+            img_b64 = base64.b64encode(f.read()).decode()
+        css_fondo = f"""
+        .stApp {{
+            background-image: linear-gradient(rgba(10, 15, 29, 0.78), rgba(5, 8, 16, 0.86)), url(data:image/jpeg;base64,{img_b64});
+            background-size: cover;
+            background-position: center center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            color: #E2E8F0;
+        }}
+        """
+    except Exception:
+        css_fondo = """
+        .stApp {
+            background: radial-gradient(circle at 15% 15%, #0f172a 0%, #070d18 55%, #03060c 100%);
+            color: #E2E8F0;
+        }
+        """
 
     st.markdown(f"""
         <style>
@@ -205,11 +211,6 @@ def aplicar_estilos(activar_fondo_imagen=False):
 
         html, body, [class*="css"] {{
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        }}
-
-        .stApp {{
-            background: radial-gradient(circle at 15% 15%, #0f172a 0%, #070d18 55%, #03060c 100%);
-            color: #E2E8F0;
         }}
 
         {css_fondo}
@@ -376,9 +377,10 @@ def aplicar_estilos(activar_fondo_imagen=False):
             background: rgba(11, 17, 32, 0.96);
             border-right: 1px solid rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(14px);
-        }}
         </style>
     """, unsafe_allow_html=True)
+
+aplicar_estilos()
 
 # ==============================================================================
 # BARRA LATERAL (SIDEBAR): PRESETS Y AMBIENTE
@@ -404,12 +406,6 @@ with st.sidebar:
         on_change=callback_cambio_preset,
         help="Al cambiar la opción, se poblarán instantáneamente todos los parámetros del asesor y tienda."
     )
-
-    st.markdown("---")
-    st.markdown("### 🎨 Entorno Visual")
-    activar_fondo = st.toggle("Activar textura de fondo infográfica", value=False, help="Inyecta suavemente la imagen conceptual 'fondo_despliegue.jfif' como fondo con opacidad balanceada.")
-    
-    aplicar_estilos(activar_fondo_imagen=activar_fondo)
 
     st.markdown("---")
     st.markdown("### 🏬 Estacionalidad Retail")
